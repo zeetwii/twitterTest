@@ -25,9 +25,12 @@ class ReplyListener(tweepy.Stream):
     def on_connection_error(self):
         self.disconnect()
         
-    def on_data(self, raw_data):
-        print(str(raw_data))
+    #def on_data(self, raw_data):
+    #    print(str(raw_data))
     
+    def sample(self):
+        return super().sample()
+
     def filter(self, *, follow=None, track=None, locations=None, filter_level=None, languages=None, stall_warnings=False, threaded=False):
         return super().filter(follow=follow, track=track, locations=locations, filter_level=filter_level, languages=languages, stall_warnings=stall_warnings, threaded=threaded)        
     
@@ -57,37 +60,73 @@ class ReplyBot:
         self.apiSecret = apiSecret
         self.accessToken = accessToken
         self.accessTokenSecret = accessTokenSecret
-        
-    def validateBot(self):
-        """
-        Validates that the credientals are working on the bot
 
-        Returns:
-            bool: True if valid, False otherwise
-        """
-        
         try:
             self.api.verify_credentials()
-            return True
+            self.id = str(self.api.verify_credentials().id)
+            self.name = self.api.verify_credentials().name
+            print(f"Credentials loaded, running as: {self.name}")
         except:
-            return False
+            print("Error, credentials not valid")
         
     def startStream(self):
         print("Starting stream, press Ctrl + C to exit")
         
         try:
-            #self.stream = ReplyBot(self.apiKey, self.apiSecret, self.accessToken, self.accessTokenSecret)
-            self.stream = tweepy.Stream(self.apiKey, self.apiSecret, self.accessToken, self.accessTokenSecret)
-            self.stream.sample()
+            self.stream = ReplyListener(self.apiKey, self.apiSecret, self.accessToken, self.accessTokenSecret)
+            #self.stream = tweepy.Stream(self.apiKey, self.apiSecret, self.accessToken, self.accessTokenSecret)
+            
+            
+            #self.stream.sample()
+            self.stream.filter(follow=[self.id])
             
             #print(self.stream.running)
         except KeyboardInterrupt:
             print("Keyboard interrupt")
             self.stream.disconnect()
             sys.exit(0)
+
+    def dmRead(self):
+
+        messageList = self.api.get_direct_messages()
+
+        for msg in messageList:
+            #print(str(msg.message_create))
+            #self.api.delete_direct_message(msg.id)
+            if msg.message_create['sender_id'] == self.id : # check to see if DM is from us
+                print("its me")
+                # Go ahead and delete the message, we don't care about our messages
+                self.api.delete_direct_message(msg.id)
+            else:
+                print("not me")
+            
+                try:
+                    print(str(msg.message_create['message_data']['quick_reply_response']['metadata']))
+                    self.api.send_direct_message(msg.message_create['sender_id'], f"Thank you for selecting option {str(msg.message_create['message_data']['quick_reply_response']['metadata'])}")
+                    self.api.delete_direct_message(msg.id)
+                except KeyError:
+                    print("not a quick repsonse, sending starting message")
+
+                    options = [
+                        {
+                        "label": "I'm good",
+                        "description": "It means you're doing good",
+                        "metadata": "1"
+                        },
+                        {
+                        "label": "Not so good",
+                        "description": "It means you're not doing good",
+                        "metadata": "2"
+                        }
+                    ]
+                    
+                    self.api.send_direct_message(msg.message_create['sender_id'], "Quick reply Test", quick_reply_options=options)
+                    self.api.delete_direct_message(msg.id)
+
+
             
     def test(self):
-        print(str(self.api.get_direct_messages()))
+        #print(str(self.api.get_direct_messages()))
         target_id = 1288710030880104448
         
         options = [
@@ -103,7 +142,7 @@ class ReplyBot:
             }
           ]
         
-        #self.api.send_direct_message(target_id, "Quick reply Test", quick_reply_options=options)
+        self.api.send_direct_message(target_id, "Quick reply Test", quick_reply_options=options)
             
         
 
@@ -119,14 +158,9 @@ if __name__ == "__main__":
         accessTokenSecret = CFG["twitter"]["access_token_secret"] 
     
     replyBot = ReplyBot(apiKey, apiSecret, accessToken, accessTokenSecret)
-
-    if replyBot.validateBot():
-        print("Creds Valid")
-    else:
-        print("Creds invalid, shutting down")
-        sys.exit("Invalid configs")
         
-    replyBot.startStream()
+    #replyBot.startStream()
     #replyBot.test()
+    replyBot.dmRead()
     
     

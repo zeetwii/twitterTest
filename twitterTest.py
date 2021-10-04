@@ -54,7 +54,7 @@ class ReplyBot:
         self.auth = tweepy.OAuthHandler(apiKey, apiSecret)
         self.auth.set_access_token(accessToken, accessTokenSecret)
 
-        self.api = tweepy.API(self.auth)
+        self.api = tweepy.API(self.auth, wait_on_rate_limit=True)
         
         self.apiKey = apiKey
         self.apiSecret = apiSecret
@@ -85,6 +85,19 @@ class ReplyBot:
             print("Keyboard interrupt")
             self.stream.disconnect()
             sys.exit(0)
+
+    def dmThread(self):
+        print("Starting DM Reader Thread, press Ctrl + C to exit")
+
+        while True:
+            try:
+                print('Scanning...')
+                self.dmRead()
+                time.sleep(60)
+            except KeyboardInterrupt:
+                print("Keyboard interrupt")
+                break
+
 
     def dmRead(self):
 
@@ -161,6 +174,7 @@ if __name__ == "__main__":
         
     #replyBot.startStream()
     #replyBot.test()
-    replyBot.dmRead()
+    #replyBot.dmRead()
+    replyBot.dmThread()
     
     

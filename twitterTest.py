@@ -60,6 +60,7 @@ class ReplyBot:
         self.apiSecret = apiSecret
         self.accessToken = accessToken
         self.accessTokenSecret = accessTokenSecret
+        self.prevMsgs = []
 
         try:
             self.api.verify_credentials()
@@ -102,39 +103,55 @@ class ReplyBot:
     def dmRead(self):
 
         messageList = self.api.get_direct_messages()
+        newIDs = []
+        repeatCount = 0
+
+        print("")
+        print(f"{str(len(messageList))} messages recieved since last scan:")
 
         for msg in messageList:
+            print('')
+            newIDs.append(msg.id)
             #print(str(msg.message_create))
             #self.api.delete_direct_message(msg.id)
-            if msg.message_create['sender_id'] == self.id : # check to see if DM is from us
-                print("its me")
-                # Go ahead and delete the message, we don't care about our messages
-                self.api.delete_direct_message(msg.id)
-            else:
-                print("not me")
-            
-                try:
-                    print(str(msg.message_create['message_data']['quick_reply_response']['metadata']))
-                    self.api.send_direct_message(msg.message_create['sender_id'], f"Thank you for selecting option {str(msg.message_create['message_data']['quick_reply_response']['metadata'])}")
-                    self.api.delete_direct_message(msg.id)
-                except KeyError:
-                    print("not a quick repsonse, sending starting message")
+            time.sleep(1)
+            if msg.id not in self.prevMsgs:
+                if msg.message_create['sender_id'] == self.id : # check to see if DM is from us
+                    print("its me")
+                    # Go ahead and delete the message, we don't care about our messages  
+                else:
+                    print("not me")
+                    #print(str(msg.message_create))
+                    try:
+                        print(str(msg.message_create['message_data']['quick_reply_response']['metadata']))
+                        self.api.send_direct_message(msg.message_create['sender_id'], f"Thank you for selecting option {str(msg.message_create['message_data']['quick_reply_response']['metadata'])}")
+                        time.sleep(1)
+                    except KeyError:
+                        print("not a quick repsonse, sending starting message")
 
-                    options = [
-                        {
-                        "label": "I'm good",
-                        "description": "It means you're doing good",
-                        "metadata": "1"
-                        },
-                        {
-                        "label": "Not so good",
-                        "description": "It means you're not doing good",
-                        "metadata": "2"
-                        }
-                    ]
-                    
-                    self.api.send_direct_message(msg.message_create['sender_id'], "Quick reply Test", quick_reply_options=options)
-                    self.api.delete_direct_message(msg.id)
+                        options = [
+                            {
+                            "label": "I'm good",
+                            "description": "It means you're doing good",
+                            "metadata": "1"
+                            },
+                            {
+                            "label": "Not so good",
+                            "description": "It means you're not doing good",
+                            "metadata": "2"
+                            }
+                        ]
+                        
+                        self.api.send_direct_message(msg.message_create['sender_id'], "Quick reply Test", quick_reply_options=options)
+                        time.sleep(1)
+                self.api.delete_direct_message(msg.id)
+                time.sleep(1)
+            else:
+                repeatCount = repeatCount + 1
+            
+        self.prevMsgs = newIDs
+        print(f"{str(repeatCount)} messages repeated")
+
 
 
             

@@ -107,7 +107,7 @@ class ReplyBot:
         repeatCount = 0
 
         print("")
-        print(f"{str(len(messageList))} messages recieved since last scan:")
+        print(f"{str(len(messageList))} messages received since last scan:")
 
         for msg in messageList:
             print('')
@@ -127,7 +127,7 @@ class ReplyBot:
                         self.api.send_direct_message(msg.message_create['sender_id'], f"Thank you for selecting option {str(msg.message_create['message_data']['quick_reply_response']['metadata'])}")
                         time.sleep(1)
                     except KeyError:
-                        print("not a quick repsonse, sending starting message")
+                        print("not a quick response, sending starting message")
 
                         options = [
                             {
